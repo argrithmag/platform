@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/influxdata/platform/kv"
 )
@@ -772,6 +773,123 @@ func KVUpdate(
 							return fmt.Errorf("expected key not found")
 						}
 					} else if err != nil {
+						return err
+					}
+
+					if want, got := tt.wants.value, value; !bytes.Equal(want, got) {
+						t.Errorf("exptected to get value %s got %s", string(want), string(got))
+						return err
+					}
+
+					return nil
+				})
+
+				if err != nil {
+					t.Fatalf("error during view transaction: %v", err)
+				}
+			}
+		})
+	}
+}
+
+// KVConcurrentUpdate tests concurrent calls to update.
+func KVConcurrentUpdate(
+	init func(KVStoreFields, *testing.T) (kv.Store, func()),
+	t *testing.T,
+) {
+	type args struct {
+		bucket []byte
+		key    []byte
+		valueA []byte
+		valueB []byte
+	}
+	type wants struct {
+		value []byte
+	}
+
+	tests := []struct {
+		name   string
+		fields KVStoreFields
+		args   args
+		wants  wants
+	}{
+		{
+			name: "basic concurrent update",
+			fields: KVStoreFields{
+				Bucket: []byte("bucket"),
+				Pairs: []kv.Pair{
+					{
+						Key:   []byte("hello"),
+						Value: []byte("cruel world"),
+					},
+				},
+			},
+			args: args{
+				bucket: []byte("bucket"),
+				key:    []byte("hello"),
+				valueA: []byte("world"),
+				valueB: []byte("darkness my new friend"),
+			},
+			wants: wants{
+				value: []byte("darkness my new friend"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, closeFn := init(tt.fields, t)
+			defer closeFn()
+
+			errCh := make(chan error)
+			var fn = func(v []byte) {
+				err := s.Update(func(tx kv.Tx) error {
+					b, err := tx.Bucket(tt.args.bucket)
+					if err != nil {
+						errCh <- fmt.Errorf("unexpected error retrieving bucket: %v", err)
+						return nil
+					}
+
+					if err := b.Put(tt.args.key, v); err != nil {
+						errCh <- err
+						return nil
+					}
+
+					return nil
+				})
+
+				if err != nil {
+					errCh <- fmt.Errorf("error during update transaction: %v", err)
+				}
+			}
+			go fn(tt.args.valueA)
+			// To ensure that a is scheduled before b
+			time.Sleep(time.Millisecond)
+			go fn(tt.args.valueB)
+
+			count := 0
+			for err := range errCh {
+				count++
+				if err != nil {
+					t.Fatal(err)
+				}
+				if count == 2 {
+					break
+				}
+			}
+
+			close(errCh)
+
+			{
+				err := s.View(func(tx kv.Tx) error {
+					b, err := tx.Bucket(tt.args.bucket)
+					if err != nil {
+						t.Errorf("unexpected error retrieving bucket: %v", err)
+						return err
+					}
+
+					value, err := b.Get(tt.args.key)
+					if err != nil {
 						return err
 					}
 
