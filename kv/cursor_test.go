@@ -2,7 +2,6 @@ package kv_test
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
 	"github.com/influxdata/platform/kv"
@@ -15,7 +14,6 @@ func TestStaticCursor_First(t *testing.T) {
 	type wants struct {
 		key []byte
 		val []byte
-		err error
 	}
 
 	tests := []struct {
@@ -28,18 +26,14 @@ func TestStaticCursor_First(t *testing.T) {
 			args: args{
 				pairs: nil,
 			},
-			wants: wants{
-				err: fmt.Errorf("index exceeds the length of the pairs"),
-			},
+			wants: wants{},
 		},
 		{
 			name: "empty pairs",
 			args: args{
 				pairs: []kv.Pair{},
 			},
-			wants: wants{
-				err: fmt.Errorf("index exceeds the length of the pairs"),
-			},
+			wants: wants{},
 		},
 		{
 			name: "unsorted pairs",
@@ -105,7 +99,6 @@ func TestStaticCursor_Last(t *testing.T) {
 	type wants struct {
 		key []byte
 		val []byte
-		err error
 	}
 
 	tests := []struct {
@@ -118,18 +111,14 @@ func TestStaticCursor_Last(t *testing.T) {
 			args: args{
 				pairs: nil,
 			},
-			wants: wants{
-				err: fmt.Errorf("index value is negative"),
-			},
+			wants: wants{},
 		},
 		{
 			name: "empty pairs",
 			args: args{
 				pairs: []kv.Pair{},
 			},
-			wants: wants{
-				err: fmt.Errorf("index value is negative"),
-			},
+			wants: wants{},
 		},
 		{
 			name: "unsorted pairs",
@@ -196,7 +185,6 @@ func TestStaticCursor_Seek(t *testing.T) {
 	type wants struct {
 		key []byte
 		val []byte
-		err error
 	}
 
 	tests := []struct {
