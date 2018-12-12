@@ -85,18 +85,7 @@ func TestStaticCursor_First(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cur := kv.NewStaticCursor(tt.args.pairs)
 
-			key, val, err := cur.First()
-
-			if (err != nil) != (tt.wants.err != nil) {
-				t.Fatalf("expected error '%v' got '%v'", tt.wants.err, err)
-			}
-
-			if err != nil && tt.wants.err != nil {
-				if err.Error() != tt.wants.err.Error() {
-					t.Fatalf("expected error messages to match '%v' got '%v'", tt.wants.err, err.Error())
-				}
-				return
-			}
+			key, val := cur.First()
 
 			if want, got := tt.wants.key, key; !bytes.Equal(want, got) {
 				t.Errorf("exptected to get key %s got %s", string(want), string(got))
@@ -186,17 +175,7 @@ func TestStaticCursor_Last(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cur := kv.NewStaticCursor(tt.args.pairs)
 
-			key, val, err := cur.Last()
-
-			if (err != nil) != (tt.wants.err != nil) {
-				t.Fatalf("expected error '%v' got '%v'", tt.wants.err, err)
-			}
-
-			if err != nil && tt.wants.err != nil {
-				if err.Error() != tt.wants.err.Error() {
-					t.Fatalf("expected error messages to match '%v' got '%v'", tt.wants.err, err.Error())
-				}
-			}
+			key, val := cur.Last()
 
 			if want, got := tt.wants.key, key; !bytes.Equal(want, got) {
 				t.Errorf("exptected to get key %s got %s", string(want), string(got))
@@ -263,17 +242,7 @@ func TestStaticCursor_Seek(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cur := kv.NewStaticCursor(tt.args.pairs)
 
-			key, val, err := cur.Seek(tt.args.prefix)
-
-			if (err != nil) != (tt.wants.err != nil) {
-				t.Fatalf("expected error '%v' got '%v'", tt.wants.err, err)
-			}
-
-			if err != nil && tt.wants.err != nil {
-				if err.Error() != tt.wants.err.Error() {
-					t.Fatalf("expected error messages to match '%v' got '%v'", tt.wants.err, err.Error())
-				}
-			}
+			key, val := cur.Seek(tt.args.prefix)
 
 			if want, got := tt.wants.key, key; !bytes.Equal(want, got) {
 				t.Errorf("exptected to get key %s got %s", string(want), string(got))
