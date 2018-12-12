@@ -174,46 +174,46 @@ type Cursor struct {
 }
 
 // Seek seeks for the first key that matches the prefix provided.
-func (c *Cursor) Seek(prefix []byte) ([]byte, []byte, error) {
+func (c *Cursor) Seek(prefix []byte) ([]byte, []byte) {
 	k, v := c.cursor.Seek(prefix)
 	if len(v) == 0 {
-		return nil, nil, kv.ErrKeyNotFound
+		return nil, nil
 	}
-	return k, v, nil
+	return k, v
 }
 
 // First retrieves the first key value pair in the bucket.
-func (c *Cursor) First() ([]byte, []byte, error) {
+func (c *Cursor) First() ([]byte, []byte) {
 	k, v := c.cursor.First()
 	if len(v) == 0 {
-		return nil, nil, kv.ErrKeyNotFound
+		return nil, nil
 	}
-	return k, v, nil
+	return k, v
 }
 
 // Last retrieves the last key value pair in the bucket.
-func (c *Cursor) Last() ([]byte, []byte, error) {
+func (c *Cursor) Last() ([]byte, []byte) {
 	k, v := c.cursor.Last()
 	if len(v) == 0 {
-		return nil, nil, kv.ErrKeyNotFound
+		return nil, nil
 	}
-	return k, v, nil
+	return k, v
 }
 
 // Next retrieves the next key in the bucket.
-func (c *Cursor) Next() ([]byte, []byte, error) {
+func (c *Cursor) Next() ([]byte, []byte) {
 	k, v := c.cursor.Next()
 	if len(v) == 0 {
-		return nil, nil, kv.ErrKeyNotFound
+		return nil, nil
 	}
-	return k, v, nil
+	return k, v
 }
 
 // Prev retrieves the previous key in the bucket.
-func (c *Cursor) Prev() ([]byte, []byte, error) {
+func (c *Cursor) Prev() ([]byte, []byte) {
 	k, v := c.cursor.Prev()
 	if len(v) == 0 {
-		return nil, nil, kv.ErrKeyNotFound
+		return nil, nil
 	}
-	return k, v, nil
+	return k, v
 }

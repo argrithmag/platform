@@ -432,11 +432,7 @@ func KVCursor(
 				}
 
 				{
-					key, val, err := cur.First()
-					if err != nil {
-						t.Errorf("unexpected error in call to first: %v", err)
-						return err
-					}
+					key, val := cur.First()
 					if want, got := tt.wants.first.Key, key; !bytes.Equal(want, got) {
 						t.Errorf("exptected to get key %s got %s", string(want), string(got))
 						return err
@@ -449,11 +445,7 @@ func KVCursor(
 				}
 
 				{
-					key, val, err := cur.Last()
-					if err != nil {
-						t.Errorf("unexpected error in call to last: %v", err)
-						return err
-					}
+					key, val := cur.Last()
 					if want, got := tt.wants.last.Key, key; !bytes.Equal(want, got) {
 						t.Errorf("exptected to get key %s got %s", string(want), string(got))
 						return err
@@ -466,11 +458,7 @@ func KVCursor(
 				}
 
 				{
-					key, val, err := cur.Seek(tt.args.seek)
-					if err != nil {
-						t.Errorf("unexpected error in call to seek: %v", err)
-						return err
-					}
+					key, val := cur.Seek(tt.args.seek)
 					if want, got := tt.wants.seek.Key, key; !bytes.Equal(want, got) {
 						t.Errorf("exptected to get key %s got %s", string(want), string(got))
 						return err
@@ -483,11 +471,7 @@ func KVCursor(
 				}
 
 				{
-					key, val, err := cur.Next()
-					if err != nil {
-						t.Errorf("unexpected error in call to next: %v", err)
-						return err
-					}
+					key, val := cur.Next()
 					if want, got := tt.wants.next.Key, key; !bytes.Equal(want, got) {
 						t.Errorf("exptected to get key %s got %s", string(want), string(got))
 						return err
@@ -500,11 +484,7 @@ func KVCursor(
 				}
 
 				{
-					key, val, err := cur.Prev()
-					if err != nil {
-						t.Errorf("unexpected error in call to prev: %v", err)
-						return err
-					}
+					key, val := cur.Prev()
 					if want, got := tt.wants.prev.Key, key; !bytes.Equal(want, got) {
 						t.Errorf("exptected to get key %s got %s", string(want), string(got))
 						return err

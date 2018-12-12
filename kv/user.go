@@ -288,10 +288,7 @@ func forEachUser(ctx context.Context, tx Tx, fn func(*platform.User) bool) error
 		return err
 	}
 
-	for k, v, err := cur.First(); k != nil; k, v, err = cur.Next() {
-		if err != nil {
-			return err
-		}
+	for k, v := cur.First(); k != nil; k, v = cur.Next() {
 		u := &platform.User{}
 		if err := json.Unmarshal(v, u); err != nil {
 			return err

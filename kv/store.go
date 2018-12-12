@@ -44,9 +44,9 @@ type Bucket interface {
 // Cursor is an abstraction for iterating/ranging through data. A concrete implementation
 // of a cursor can be found in cursor.go.
 type Cursor interface {
-	Seek(prefix []byte) (k []byte, v []byte, err error)
-	First() (k []byte, v []byte, err error)
-	Last() (k []byte, v []byte, err error)
-	Next() (k []byte, v []byte, err error)
-	Prev() (k []byte, v []byte, err error)
+	Seek(prefix []byte) (k []byte, v []byte)
+	First() (k []byte, v []byte)
+	Last() (k []byte, v []byte)
+	Next() (k []byte, v []byte)
+	Prev() (k []byte, v []byte)
 }
