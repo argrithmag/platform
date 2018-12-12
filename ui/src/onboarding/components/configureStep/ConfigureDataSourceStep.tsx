@@ -108,13 +108,13 @@ class ConfigureDataSourceStep extends PureComponent<Props> {
           <div className="wizard-button-bar">
             <Button
               color={ComponentColor.Default}
-              text="Back"
+              text={this.backButtonText}
               size={ComponentSize.Medium}
               onClick={this.handlePrevious}
             />
             <Button
               color={ComponentColor.Primary}
-              text="Next"
+              text={this.nextButtonText}
               size={ComponentSize.Medium}
               onClick={this.handleNext}
               status={ComponentStatus.Default}
@@ -125,6 +125,48 @@ class ConfigureDataSourceStep extends PureComponent<Props> {
         </div>
       </div>
     )
+  }
+
+  private get nextButtonText(): string {
+    const {
+      telegrafPlugins,
+      params: {substepID},
+      type,
+    } = this.props
+
+    const index = +substepID
+
+    if (type === DataLoaderType.Streaming) {
+      if (index + 1 > telegrafPlugins.length - 1) {
+        return 'Create and Verify'
+      }
+      return `Continue to ${_.startCase(
+        _.get(telegrafPlugins, `${index + 1}.name`)
+      )}`
+    }
+
+    return 'Next'
+  }
+
+  private get backButtonText(): string {
+    const {
+      telegrafPlugins,
+      params: {substepID},
+      type,
+    } = this.props
+
+    const index = +substepID
+
+    if (type === DataLoaderType.Streaming) {
+      if (index < 1) {
+        return 'Streaming Sources'
+      }
+      return `Back to ${_.startCase(
+        _.get(telegrafPlugins, `${index - 1}.name`)
+      )}`
+    }
+
+    return 'Back'
   }
 
   private get skipLink() {
