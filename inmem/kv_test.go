@@ -10,9 +10,9 @@ import (
 	platformtesting "github.com/influxdata/platform/testing"
 )
 
-func initUserKVService(f platformtesting.UserFields, t *testing.T) (platform.UserService, func()) {
+func initExampleService(f platformtesting.UserFields, t *testing.T) (platform.UserService, func()) {
 	s := inmem.NewKVStore()
-	svc := kv.NewUserService(s, f.IDGenerator)
+	svc := kv.NewExampleService(s, f.IDGenerator)
 	if err := svc.Initialize(); err != nil {
 		t.Fatalf("error initializing user service: %v", err)
 	}
@@ -32,8 +32,8 @@ func initUserKVService(f platformtesting.UserFields, t *testing.T) (platform.Use
 	}
 }
 
-func TestUserService(t *testing.T) {
-	platformtesting.UserService(initUserKVService, t)
+func TestExampleService(t *testing.T) {
+	platformtesting.UserService(initExampleService, t)
 }
 
 func initKVStore(f platformtesting.KVStoreFields, t *testing.T) (kv.Store, func()) {

@@ -1,3 +1,5 @@
+// Note: this file is used as a proof of concept for having a generic
+// keyvalue store backed by specific implementations of kv.Store.
 package kv
 
 import (
@@ -8,41 +10,40 @@ import (
 	"github.com/influxdata/platform"
 )
 
-// TODO: this is just a proof of concept
-
 var (
-	userBucket = []byte("usersv1")
-	userIndex  = []byte("userindexv1")
+	exampleBucket = []byte("examplesv1")
+	exampleIndex  = []byte("exampleindexv1")
 )
 
-var _ platform.UserService = (*UserService)(nil)
-
-type UserService struct {
+// ExampleService is an example user like service built on a generic kv store.
+type ExampleService struct {
 	kv          Store
 	idGenerator platform.IDGenerator
 }
 
-func NewUserService(kv Store, idGen platform.IDGenerator) *UserService {
-	return &UserService{
+// NewExampleService creates an instance of an example service.
+func NewExampleService(kv Store, idGen platform.IDGenerator) *ExampleService {
+	return &ExampleService{
 		kv:          kv,
 		idGenerator: idGen,
 	}
 }
 
-func (c *UserService) Initialize() error {
+// Initialize creates the buckets for the example service
+func (c *ExampleService) Initialize() error {
 	return c.kv.Update(func(tx Tx) error {
-		if _, err := tx.Bucket([]byte(userBucket)); err != nil {
+		if _, err := tx.Bucket([]byte(exampleBucket)); err != nil {
 			return err
 		}
-		if _, err := tx.Bucket([]byte(userIndex)); err != nil {
+		if _, err := tx.Bucket([]byte(exampleIndex)); err != nil {
 			return err
 		}
 		return nil
 	})
 }
 
-// FindUserByID retrieves a user by id.
-func (c *UserService) FindUserByID(ctx context.Context, id platform.ID) (*platform.User, error) {
+// FindUserByID retrieves a example by id.
+func (c *ExampleService) FindUserByID(ctx context.Context, id platform.ID) (*platform.User, error) {
 	var u *platform.User
 
 	err := c.kv.View(func(tx Tx) error {
@@ -61,13 +62,13 @@ func (c *UserService) FindUserByID(ctx context.Context, id platform.ID) (*platfo
 	return u, nil
 }
 
-func (c *UserService) findUserByID(ctx context.Context, tx Tx, id platform.ID) (*platform.User, error) {
+func (c *ExampleService) findUserByID(ctx context.Context, tx Tx, id platform.ID) (*platform.User, error) {
 	encodedID, err := id.Encode()
 	if err != nil {
 		return nil, err
 	}
 
-	b, err := tx.Bucket(userBucket)
+	b, err := tx.Bucket(exampleBucket)
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +92,8 @@ func (c *UserService) findUserByID(ctx context.Context, tx Tx, id platform.ID) (
 	return &u, nil
 }
 
-// FindUserByName returns a user by name for a particular user.
-func (c *UserService) FindUserByName(ctx context.Context, n string) (*platform.User, error) {
+// FindUserByName returns a example by name for a particular example.
+func (c *ExampleService) FindUserByName(ctx context.Context, n string) (*platform.User, error) {
 	var u *platform.User
 
 	err := c.kv.View(func(tx Tx) error {
@@ -107,12 +108,12 @@ func (c *UserService) FindUserByName(ctx context.Context, n string) (*platform.U
 	return u, err
 }
 
-func (c *UserService) findUserByName(ctx context.Context, tx Tx, n string) (*platform.User, error) {
-	b, err := tx.Bucket(userIndex)
+func (c *ExampleService) findUserByName(ctx context.Context, tx Tx, n string) (*platform.User, error) {
+	b, err := tx.Bucket(exampleIndex)
 	if err != nil {
 		return nil, err
 	}
-	uid, err := b.Get(userIndexKey(n))
+	uid, err := b.Get(exampleIndexKey(n))
 	if err == ErrKeyNotFound {
 		return nil, &platform.Error{
 			Code: platform.ENotFound,
@@ -130,10 +131,10 @@ func (c *UserService) findUserByName(ctx context.Context, tx Tx, n string) (*pla
 	return c.findUserByID(ctx, tx, id)
 }
 
-// FindUser retrives a user using an arbitrary user filter.
+// FindUser retrives a example using an arbitrary example filter.
 // Filters using ID, or Name should be efficient.
-// Other filters will do a linear scan across users until it finds a match.
-func (c *UserService) FindUser(ctx context.Context, filter platform.UserFilter) (*platform.User, error) {
+// Other filters will do a linear scan across examples until it finds a match.
+func (c *ExampleService) FindUser(ctx context.Context, filter platform.UserFilter) (*platform.User, error) {
 	if filter.ID != nil {
 		return c.FindUserByID(ctx, *filter.ID)
 	}
@@ -142,11 +143,11 @@ func (c *UserService) FindUser(ctx context.Context, filter platform.UserFilter) 
 		return c.FindUserByName(ctx, *filter.Name)
 	}
 
-	filterFn := filterUsersFn(filter)
+	filterFn := filterExamplesFn(filter)
 
 	var u *platform.User
 	err := c.kv.View(func(tx Tx) error {
-		return forEachUser(ctx, tx, func(usr *platform.User) bool {
+		return forEachExample(ctx, tx, func(usr *platform.User) bool {
 			if filterFn(usr) {
 				u = usr
 				return false
@@ -166,7 +167,7 @@ func (c *UserService) FindUser(ctx context.Context, filter platform.UserFilter) 
 	return u, nil
 }
 
-func filterUsersFn(filter platform.UserFilter) func(u *platform.User) bool {
+func filterExamplesFn(filter platform.UserFilter) func(u *platform.User) bool {
 	if filter.ID != nil {
 		return func(u *platform.User) bool {
 			return u.ID.Valid() && u.ID == *filter.ID
@@ -182,10 +183,10 @@ func filterUsersFn(filter platform.UserFilter) func(u *platform.User) bool {
 	return func(u *platform.User) bool { return true }
 }
 
-// FindUsers retrives all users that match an arbitrary user filter.
+// FindUsers retrives all examples that match an arbitrary example filter.
 // Filters using ID, or Name should be efficient.
-// Other filters will do a linear scan across all users searching for a match.
-func (c *UserService) FindUsers(ctx context.Context, filter platform.UserFilter, opt ...platform.FindOptions) ([]*platform.User, int, error) {
+// Other filters will do a linear scan across all examples searching for a match.
+func (c *ExampleService) FindUsers(ctx context.Context, filter platform.UserFilter, opt ...platform.FindOptions) ([]*platform.User, int, error) {
 	if filter.ID != nil {
 		u, err := c.FindUserByID(ctx, *filter.ID)
 		if err != nil {
@@ -205,9 +206,9 @@ func (c *UserService) FindUsers(ctx context.Context, filter platform.UserFilter,
 	}
 
 	us := []*platform.User{}
-	filterFn := filterUsersFn(filter)
+	filterFn := filterExamplesFn(filter)
 	err := c.kv.View(func(tx Tx) error {
-		return forEachUser(ctx, tx, func(u *platform.User) bool {
+		return forEachExample(ctx, tx, func(u *platform.User) bool {
 			if filterFn(u) {
 				us = append(us, u)
 			}
@@ -222,10 +223,10 @@ func (c *UserService) FindUsers(ctx context.Context, filter platform.UserFilter,
 	return us, len(us), nil
 }
 
-// CreateUser creates a platform user and sets b.ID.
-func (c *UserService) CreateUser(ctx context.Context, u *platform.User) error {
+// CreateUser creates a platform example and sets b.ID.
+func (c *ExampleService) CreateUser(ctx context.Context, u *platform.User) error {
 	return c.kv.Update(func(tx Tx) error {
-		unique := c.uniqueUserName(ctx, tx, u)
+		unique := c.uniqueExampleName(ctx, tx, u)
 
 		if !unique {
 			// TODO: make standard error
@@ -238,14 +239,14 @@ func (c *UserService) CreateUser(ctx context.Context, u *platform.User) error {
 	})
 }
 
-// PutUser will put a user without setting an ID.
-func (c *UserService) PutUser(ctx context.Context, u *platform.User) error {
+// PutUser will put a example without setting an ID.
+func (c *ExampleService) PutUser(ctx context.Context, u *platform.User) error {
 	return c.kv.Update(func(tx Tx) error {
 		return c.putUser(ctx, tx, u)
 	})
 }
 
-func (c *UserService) putUser(ctx context.Context, tx Tx, u *platform.User) error {
+func (c *ExampleService) putUser(ctx context.Context, tx Tx, u *platform.User) error {
 	v, err := json.Marshal(u)
 	if err != nil {
 		return err
@@ -255,16 +256,16 @@ func (c *UserService) putUser(ctx context.Context, tx Tx, u *platform.User) erro
 		return err
 	}
 
-	idx, err := tx.Bucket(userIndex)
+	idx, err := tx.Bucket(exampleIndex)
 	if err != nil {
 		return err
 	}
 
-	if err := idx.Put(userIndexKey(u.Name), encodedID); err != nil {
+	if err := idx.Put(exampleIndexKey(u.Name), encodedID); err != nil {
 		return err
 	}
 
-	b, err := tx.Bucket(userBucket)
+	b, err := tx.Bucket(exampleBucket)
 	if err != nil {
 		return err
 	}
@@ -272,13 +273,13 @@ func (c *UserService) putUser(ctx context.Context, tx Tx, u *platform.User) erro
 	return b.Put(encodedID, v)
 }
 
-func userIndexKey(n string) []byte {
+func exampleIndexKey(n string) []byte {
 	return []byte(n)
 }
 
-// forEachUser will iterate through all users while fn returns true.
-func forEachUser(ctx context.Context, tx Tx, fn func(*platform.User) bool) error {
-	b, err := tx.Bucket(userBucket)
+// forEachExample will iterate through all examples while fn returns true.
+func forEachExample(ctx context.Context, tx Tx, fn func(*platform.User) bool) error {
+	b, err := tx.Bucket(exampleBucket)
 	if err != nil {
 		return err
 	}
@@ -301,20 +302,20 @@ func forEachUser(ctx context.Context, tx Tx, fn func(*platform.User) bool) error
 	return nil
 }
 
-func (c *UserService) uniqueUserName(ctx context.Context, tx Tx, u *platform.User) bool {
-	idx, err := tx.Bucket(userIndex)
+func (c *ExampleService) uniqueExampleName(ctx context.Context, tx Tx, u *platform.User) bool {
+	idx, err := tx.Bucket(exampleIndex)
 	if err != nil {
 		return false
 	}
 
-	if _, err := idx.Get(userIndexKey(u.Name)); err == ErrKeyNotFound {
+	if _, err := idx.Get(exampleIndexKey(u.Name)); err == ErrKeyNotFound {
 		return true
 	}
 	return false
 }
 
-// UpdateUser updates a user according the parameters set on upd.
-func (c *UserService) UpdateUser(ctx context.Context, id platform.ID, upd platform.UserUpdate) (*platform.User, error) {
+// UpdateUser updates a example according the parameters set on upd.
+func (c *ExampleService) UpdateUser(ctx context.Context, id platform.ID, upd platform.UserUpdate) (*platform.User, error) {
 	var u *platform.User
 	err := c.kv.Update(func(tx Tx) error {
 		usr, err := c.updateUser(ctx, tx, id, upd)
@@ -328,21 +329,21 @@ func (c *UserService) UpdateUser(ctx context.Context, id platform.ID, upd platfo
 	return u, err
 }
 
-func (c *UserService) updateUser(ctx context.Context, tx Tx, id platform.ID, upd platform.UserUpdate) (*platform.User, error) {
+func (c *ExampleService) updateUser(ctx context.Context, tx Tx, id platform.ID, upd platform.UserUpdate) (*platform.User, error) {
 	u, err := c.findUserByID(ctx, tx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if upd.Name != nil {
-		// Users are indexed by name and so the user index must be pruned
+		// Examples are indexed by name and so the example index must be pruned
 		// when name is modified.
-		idx, err := tx.Bucket(userIndex)
+		idx, err := tx.Bucket(exampleIndex)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := idx.Delete(userIndexKey(u.Name)); err != nil {
+		if err := idx.Delete(exampleIndexKey(u.Name)); err != nil {
 			return nil, err
 		}
 		u.Name = *upd.Name
@@ -355,14 +356,14 @@ func (c *UserService) updateUser(ctx context.Context, tx Tx, id platform.ID, upd
 	return u, nil
 }
 
-// DeleteUser deletes a user and prunes it from the index.
-func (c *UserService) DeleteUser(ctx context.Context, id platform.ID) error {
+// DeleteUser deletes a example and prunes it from the index.
+func (c *ExampleService) DeleteUser(ctx context.Context, id platform.ID) error {
 	return c.kv.Update(func(tx Tx) error {
 		return c.deleteUser(ctx, tx, id)
 	})
 }
 
-func (c *UserService) deleteUser(ctx context.Context, tx Tx, id platform.ID) error {
+func (c *ExampleService) deleteUser(ctx context.Context, tx Tx, id platform.ID) error {
 	u, err := c.findUserByID(ctx, tx, id)
 	if err != nil {
 		return err
@@ -372,16 +373,16 @@ func (c *UserService) deleteUser(ctx context.Context, tx Tx, id platform.ID) err
 		return err
 	}
 
-	idx, err := tx.Bucket(userIndex)
+	idx, err := tx.Bucket(exampleIndex)
 	if err != nil {
 		return err
 	}
 
-	if err := idx.Delete(userIndexKey(u.Name)); err != nil {
+	if err := idx.Delete(exampleIndexKey(u.Name)); err != nil {
 		return err
 	}
 
-	b, err := tx.Bucket(userBucket)
+	b, err := tx.Bucket(exampleBucket)
 	if err != nil {
 		return err
 	}
