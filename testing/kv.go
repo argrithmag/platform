@@ -52,6 +52,10 @@ func KVStore(
 			name: "Update",
 			fn:   KVUpdate,
 		},
+		{
+			name: "ConcurrentUpdate",
+			fn:   KVConcurrentUpdate,
+		},
 	}
 
 	for _, tt := range tests {
@@ -846,13 +850,11 @@ func KVConcurrentUpdate(
 				err := s.Update(func(tx kv.Tx) error {
 					b, err := tx.Bucket(tt.args.bucket)
 					if err != nil {
-						errCh <- fmt.Errorf("unexpected error retrieving bucket: %v", err)
-						return nil
+						return err
 					}
 
 					if err := b.Put(tt.args.key, v); err != nil {
-						errCh <- err
-						return nil
+						return err
 					}
 
 					return nil
@@ -860,6 +862,8 @@ func KVConcurrentUpdate(
 
 				if err != nil {
 					errCh <- fmt.Errorf("error during update transaction: %v", err)
+				} else {
+					errCh <- nil
 				}
 			}
 			go fn(tt.args.valueA)
