@@ -29,7 +29,7 @@ func TestEmptyCheck(t *testing.T) {
 	}
 }
 
-func TestAddHealthyCheck(t *testing.T) {
+func TestAddHealthCheck(t *testing.T) {
 	h := NewCheck()
 	h.AddHealthCheck(Named("awesome", ErrCheck(func() error {
 		return nil
@@ -40,7 +40,7 @@ func TestAddHealthyCheck(t *testing.T) {
 	}
 
 	if len(r.Checks) != 1 {
-		t.Fatal("check not in results")
+		t.Fatalf("check not in results: %+v", r.Checks)
 	}
 
 	v := r.Checks[0]
@@ -231,7 +231,7 @@ func TestPassthrough(t *testing.T) {
 	}
 
 	if resp.StatusCode != 404 {
-		t.Fatal("failed to error when no passthrough is present")
+		t.Fatalf("failed to error when no passthrough is present, status: %d", resp.StatusCode)
 	}
 
 	used := false
@@ -248,13 +248,12 @@ func TestPassthrough(t *testing.T) {
 	}
 
 	if resp.StatusCode != 200 {
-		t.Fatal("bad response code from passthrough")
+		t.Fatalf("bad response code from passthrough, status: %d", resp.StatusCode)
 	}
 
 	if !used {
 		t.Fatal("passthrough server not used")
 	}
-
 }
 
 func ExampleNewCheck() {

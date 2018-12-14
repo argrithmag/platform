@@ -105,7 +105,6 @@ func (c *Check) SetPassthrough(h http.Handler) {
 
 // ServeHTTP serves /ready and /health requests with the respective checks.
 func (c *Check) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	// allow requests not intended for checks to pass through.
 	if r.URL.Path != "/ready" && r.URL.Path != "/health" {
 		if c.passthroughHandler != nil {
@@ -137,7 +136,7 @@ func (c *Check) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	b, err := json.MarshalIndent(resp, "", "  ")
 	if err != nil {
-		msg = `{"message": "error marshaling response", "status": "fail"}`
+		b = []byte(`{"message": "error marshaling response", "status": "fail"}`)
 		status = http.StatusInternalServerError
 	}
 	msg = string(b)
