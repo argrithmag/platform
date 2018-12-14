@@ -221,24 +221,6 @@ func TestNoCrossOver(t *testing.T) {
 	}
 }
 
-func TestOverride(t *testing.T) {
-	c, ts := buildCheckWithServer()
-	defer ts.Close()
-
-	resp, err := http.Get(ts.URL + "/health?force=true&healthy=false")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if resp.StatusCode != 503 {
-		t.Fatal("override not being accepted")
-	}
-
-	if !c.manualOverride.Load().(bool) {
-		t.Fatal("override not set for next request")
-	}
-}
-
 func TestPassthrough(t *testing.T) {
 	c, ts := buildCheckWithServer()
 	defer ts.Close()

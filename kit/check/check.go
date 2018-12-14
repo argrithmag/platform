@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"sync/atomic"
 )
 
 // Status string to indicate the overall status of the check.
@@ -29,10 +28,6 @@ type Check struct {
 	healthChecks []Checker
 	readyChecks  []Checker
 
-	manualOverride atomic.Value
-	manualReady    atomic.Value
-	manualHealthy  atomic.Value
-
 	passthroughHandler http.Handler
 }
 
@@ -43,15 +38,7 @@ type Checker interface {
 
 // NewCheck returns a Health with a default checker.
 func NewCheck() *Check {
-	h := &Check{
-		manualOverride: atomic.Value{},
-		manualReady:    atomic.Value{},
-		manualHealthy:  atomic.Value{},
-	}
-	h.manualOverride.Store(false)
-	h.manualReady.Store(false)
-	h.manualHealthy.Store(false)
-	return h
+	return &Check{}
 }
 
 // AddHealthCheck adds the check to the list of ready checks.
@@ -140,55 +127,6 @@ func (c *Check) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		resp = c.CheckReady(r.Context())
 	case "/health":
 		resp = c.CheckHealth(r.Context())
-	}
-
-	// Check for a manual override state change.
-	query := r.URL.Query()
-	switch query.Get("force") {
-	case "true":
-		c.manualOverride.Store(true)
-		switch r.URL.Path {
-		case "/ready":
-			switch query.Get("ready") {
-			case "true":
-				c.manualReady.Store(true)
-			case "false":
-				c.manualReady.Store(false)
-			}
-		case "/health":
-			switch query.Get("healthy") {
-			case "true":
-				c.manualHealthy.Store(true)
-			case "false":
-				c.manualHealthy.Store(false)
-			}
-		}
-	case "false":
-		c.manualOverride.Store(false)
-	}
-
-	// Check for a manual override currently in effect.
-	if c.manualOverride.Load().(bool) {
-		// A human has requested a manual override, so we need to add a health response
-		// and set the HTTP response status
-		manualResp := Response{
-			Name:    "manual-override",
-			Message: "A human has requested a manual override",
-		}
-		var pass bool
-		switch r.URL.Path {
-		case "/ready":
-			pass = c.manualReady.Load().(bool)
-		case "/health":
-			pass = c.manualHealthy.Load().(bool)
-		}
-		if pass {
-			manualResp.Status = StatusPass
-		} else {
-			manualResp.Status = StatusFail
-		}
-		resp.Status = manualResp.Status
-		resp.Checks = append(resp.Checks, manualResp)
 	}
 
 	// Set the HTTP status if the check failed
